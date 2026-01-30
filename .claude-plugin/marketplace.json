@@ -1,0 +1,15 @@
+{
+  "$schema": "https://code.claude.com/schemas/marketplace.json",
+  "name": "clickhouse",
+  "owner": {
+    "name": "ObsessionDB",
+    "url": "https://github.com/obsessiondb"
+  },
+  "plugins": [
+    {
+      "name": "clickhouse",
+      "source": "./",
+      "description": "ClickHouse database skills for schema design, query optimization, and more"
+    }
+  ]
+}

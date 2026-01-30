@@ -1,0 +1,58 @@
+ObsessionDB Source Available License v1.0
+
+Copyright (c) 2026 ObsessionDB
+
+TERMS AND CONDITIONS
+
+1. DEFINITIONS
+
+"Software" means the source code, documentation, and any associated materials
+in this repository.
+
+"Commercial Distribution" means any of the following:
+(a) Selling, licensing, or sublicensing the Software or derivative works;
+(b) Including the Software as part of a product, service, or offering sold
+or provided to third parties;
+(c) Distributing the Software (in whole or in part) as a component of any
+commercial product or service;
+(d) Offering the Software's functionality as a service (SaaS, API, hosted
+solution, etc.) to third parties.
+
+2. GRANT OF RIGHTS
+
+Subject to the terms of this License, the copyright holder grants you a
+non-exclusive, non-transferable license to:
+(a) View, study, and learn from the Software;
+(b) Copy, modify, and use the Software for any internal purpose, including
+building commercial products, provided the Software itself is not
+distributed as part of such products;
+(c) Use the Software for personal, educational, or non-commercial purposes.
+
+3. RESTRICTIONS
+
+You may NOT:
+(a) Engage in Commercial Distribution of the Software;
+(b) Remove or alter any copyright, trademark, or attribution notices;
+(c) Use the Software in any way that directly competes with ObsessionDB's
+ClickHouse optimization products or services.
+
+4. INTERNAL TEAMS
+
+Affiliated entities and internal teams of the copyright holder are granted
+full rights to use, modify, build upon, and distribute this Software without
+the restrictions in Section 3.
+
+5. DISCLAIMER
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+6. TERMINATION
+
+This License automatically terminates if you violate any of its terms. Upon
+termination, you must cease all use and destroy all copies of the Software.

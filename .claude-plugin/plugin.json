@@ -1,0 +1,8 @@
+{
+  "name": "clickhouse",
+  "description": "Build ClickHouse tables with sub-second queries, 10x compression, and zero full table scans",
+  "version": "1.0.0",
+  "author": {
+    "name": "ObsessionDB"
+  }
+}
