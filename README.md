@@ -40,3 +40,7 @@ Contributions welcome! See [AGENTS.md](AGENTS.md) for skill authoring guidelines
 ## License
 
 MIT + Commons Clause (free to use, not for resale)
+
+## Sponsor
+
+Sponsored by [ObsessionDB](https://obsessiondb.com)
