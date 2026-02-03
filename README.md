@@ -10,22 +10,32 @@ npx skills add https://github.com/obsessiondb/clickhouse-skills
 
 ## Available Skills
 
-| Skill                             | Goals                                                              |
-| --------------------------------- | ------------------------------------------------------------------ |
-| **clickhouse-schema-design**      | Sub-second queries on billion rows, 10x compression, auto-retention |
-| **clickhouse-query-optimization** | 10-100x faster queries, 90% less memory, eliminate full scans       |
+| Skill                             | Rules | Trigger                                                       |
+| --------------------------------- | ----- | ------------------------------------------------------------- |
+| **clickhouse-schema-design**      | 15+   | Creating/modifying tables, ORDER BY, PARTITION BY, TTL        |
+| **clickhouse-query-optimization** | 20+   | Writing/debugging queries, slow queries, JOINs, memory errors |
+| **clickhouse-materialized-views** | 10+   | Creating MVs, real-time aggregation, pre-aggregation          |
 
-## Roadmap
+## How Skills Work
 
-| Skill                         | Status  | Goals                                               |
-| ----------------------------- | ------- | --------------------------------------------------- |
-| clickhouse-materialized-views | Planned | Real-time dashboards, pre-aggregated metrics        |
-| clickhouse-table-engines      | Planned | Deduplication, CDC, incremental aggregation         |
-| clickhouse-indexes            | Planned | Secondary lookups without full scans                |
+Skills load automatically when relevant tasks are detected:
+
+- Mention "CREATE TABLE" or "schema" → loads **schema-design**
+- Mention "slow query", "JOIN", or "optimize" → loads **query-optimization**
+- Mention "materialized view" or "MV" → loads **materialized-views**
+
+## Skill Structure
+
+Each skill contains a `SKILL.md` file with:
+
+- **Goals** - Measurable outcomes (e.g., "10x compression")
+- **Critical Rules** - Prioritized as CRITICAL, HIGH, MEDIUM
+- **Patterns** - Good vs Bad code examples
+- **Troubleshooting** - Common problems and solutions
 
 ## Contributing
 
-Contributions welcome! Please open an issue or PR.
+Contributions welcome! See [AGENTS.md](AGENTS.md) for skill authoring guidelines.
 
 ## License
 
