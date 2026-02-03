@@ -1,6 +1,6 @@
 ---
 name: clickhouse-query-optimization
-description: Load when writing ClickHouse queries, debugging slow queries, fixing memory errors, or optimizing JOINs. Achieves 10-100x faster queries, 90% less memory usage, and eliminates full table scans.
+description: "20+ optimization rules for ClickHouse queries. Load when writing queries, debugging slow queries, fixing memory errors, or optimizing JOINs. Achieves 10-100x faster queries, 90% less memory usage."
 ---
 
 # ClickHouse Query Optimization
@@ -26,13 +26,21 @@ Load when writing, debugging, or optimizing ClickHouse queries.
 
 ## Critical Rules
 
-1. **Filter on ORDER BY or indexes columns** - Queries that don't filter on ORDER BY prefix scan entire table
-2. **Avoid SELECT star** - Only select columns you need
-3. **Use PREWHERE for selective filters** - Reduces I/O before main WHERE
-4. **Prefer dictionaries over JOINs** - For key-value lookups
-5. **Use IN subqueries for existence checks** - Faster than JOIN for filtering
-6. **Limit JOINs when possible** - Each JOIN increases complexity exponentially
-7. **Always check EXPLAIN** - Verify index usage and row estimates
+### [CRITICAL]
+
+1. **Filter on ORDER BY prefix columns.** Queries that skip the prefix scan the entire table.
+2. **Avoid SELECT *.** Only select columns you need.
+3. **Always check EXPLAIN indexes=1.** Verify index usage and row estimates before optimizing.
+
+### [HIGH]
+
+4. **Use PREWHERE for selective filters.** Reduces I/O before main WHERE clause.
+5. **Prefer dictionaries over JOINs.** For key-value lookups on tables <10M rows.
+6. **Use IN subqueries for existence checks.** Faster than JOIN when you don't need columns from the other table.
+
+### [MEDIUM]
+
+7. **Limit JOINs when possible.** Each JOIN increases complexity exponentially.
 
 ## Querying basics: ORDER BY, indexes and PREWHERE
 

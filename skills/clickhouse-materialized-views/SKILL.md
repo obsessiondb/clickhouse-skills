@@ -1,6 +1,6 @@
 ---
 name: clickhouse-materialized-views
-description: Load when creating Materialized Views for real-time aggregation, data transformation, or query optimization. Covers MV patterns with SummingMergeTree, AggregatingMergeTree, and common pitfalls.
+description: "10+ patterns for ClickHouse Materialized Views. Load when creating MVs for real-time aggregation, data transformation, or query optimization. Covers SummingMergeTree, AggregatingMergeTree, and common pitfalls."
 ---
 
 # ClickHouse Materialized Views
@@ -19,10 +19,20 @@ Load when creating Materialized Views for real-time aggregation, ETL pipelines, 
 
 ## Critical Rules
 
-1. **MVs are triggers, not caches** - They process INSERT data, not query results
-2. **Use correct engine** - AggregatingMergeTree for complex aggregates, SummingMergeTree for counters
-3. **Query with argMax or -Merge** - Aggregation completes at query time, not insert time
-4. **MV sees INSERT only** - No backfill; existing data must be inserted manually
+### [CRITICAL]
+
+1. **MVs are triggers, not caches.** They process INSERT data, not query results.
+2. **Use correct engine.** AggregatingMergeTree for complex aggregates, SummingMergeTree for simple counters.
+3. **Query with -Merge functions or argMax.** Aggregation completes at query time, not insert time.
+
+### [HIGH]
+
+4. **MV sees INSERT only.** No backfill; existing data must be inserted manually.
+5. **ORDER BY in target must match GROUP BY in MV.** Otherwise aggregation won't work properly.
+
+### [MEDIUM]
+
+6. **Avoid too many MVs on one source table.** Each MV adds overhead to every INSERT.
 
 ## How Materialized Views Work
 

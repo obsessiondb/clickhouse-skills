@@ -1,6 +1,6 @@
 ---
 name: clickhouse-schema-design
-description: ALWAYS LOAD when creating or modifying ClickHouse tables. Achieves sub-second queries, 10x compression, and automated data lifecycle.
+description: "15+ schema rules for ClickHouse tables. ALWAYS LOAD when creating or modifying tables. Achieves sub-second queries, 10x compression, and automated data lifecycle."
 ---
 
 # ClickHouse Schema Design
@@ -26,13 +26,21 @@ description: ALWAYS LOAD when creating or modifying ClickHouse tables. Achieves 
 
 ## Critical Rules
 
-1. **ORDER BY columns determine query performance** - Put most-filtered columns first
-2. **Low cardinality columns before high cardinality** - tenant_id before user_id before timestamp
-3. **PARTITION BY is for data management, not query speed** - ORDER BY speeds up queries
-4. **Use smallest data types possible** - UInt32 not UInt64 if values fit
-5. **LowCardinality for strings with <10K unique values** - Saves storage and speeds queries
-6. **Avoid Nullable when possible** - Use DEFAULT values instead
-7. **PRIMARY KEY can be a prefix of ORDER BY** - Reduces index size
+### [CRITICAL]
+
+1. **ORDER BY determines query performance.** Put most-filtered columns first, low cardinality before high.
+2. **PARTITION BY is for data management, not query speed.** Use ORDER BY to speed up queries.
+3. **Use smallest data types possible.** UInt32 not UInt64 if values fit.
+
+### [HIGH]
+
+4. **LowCardinality for strings with <10K unique values.** Saves storage and speeds queries.
+5. **Avoid Nullable when possible.** Use DEFAULT values instead.
+6. **PRIMARY KEY can be a prefix of ORDER BY.** Reduces index size.
+
+### [MEDIUM]
+
+7. **3-5 columns in ORDER BY is typical.** More columns rarely help, fewer may miss optimization opportunities.
 
 ## Engine Selection
 
