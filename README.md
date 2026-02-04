@@ -43,4 +43,4 @@ MIT + Commons Clause (free to use, not for resale)
 
 ## Sponsor
 
-Sponsored by [ObsessionDB](https://obsessiondb.com)
+Sponsored by [ObsessionDB](https://obsessiondb.com) — ClickHouse® infrastructure as a service that decouples processing from storage for high-volume event data.
