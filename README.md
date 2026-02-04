@@ -5,7 +5,7 @@ Build ClickHouse tables with sub-second queries, 10x compression, and zero full 
 ## Installation
 
 ```bash
-npx skills add https://github.com/obsessiondb/clickhouse-skills
+npx skills add obsessiondb/clickhouse-skills
 ```
 
 ## Available Skills
