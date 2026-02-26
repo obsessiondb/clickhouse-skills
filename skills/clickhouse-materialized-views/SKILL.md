@@ -24,15 +24,16 @@ Load when creating Materialized Views for real-time aggregation, ETL pipelines, 
 1. **MVs are triggers, not caches.** They process INSERT data, not query results.
 2. **Use correct engine.** AggregatingMergeTree for complex aggregates, SummingMergeTree for simple counters.
 3. **Query with -Merge functions or argMax.** Aggregation completes at query time, not insert time.
+4. **Chained MVs see the pre-aggregated block, NOT the merged table state.** A downstream MV (A→B→C) receives the block just inserted into B's target table — already grouped by the upstream MV's SELECT, but not merged with existing data. This means each insert batch is processed independently and `-MergeState` is required when chaining AggregatingMergeTree MVs.
 
 ### [HIGH]
 
-4. **MV sees INSERT only.** No backfill; existing data must be inserted manually.
-5. **ORDER BY in target must match GROUP BY in MV.** Otherwise aggregation won't work properly.
+5. **MV sees INSERT only.** No backfill; existing data must be inserted manually.
+6. **ORDER BY in target must match GROUP BY in MV.** Otherwise aggregation won't work properly.
 
 ### [MEDIUM]
 
-6. **Avoid too many MVs on one source table.** Each MV adds overhead to every INSERT.
+7. **Avoid too many MVs on one source table when possible.** Each MV adds overhead to every INSERT.
 
 ## How Materialized Views Work
 
@@ -262,13 +263,15 @@ CREATE MATERIALIZED VIEW daily_event_counts_mv TO daily_event_counts AS ...;
 
 ## Common Pitfalls
 
-| Pitfall | Problem | Solution |
-|---------|---------|----------|
-| Using `uniq()` with SummingMergeTree | Sums don't equal uniques | Use AggregatingMergeTree with `uniqState/uniqMerge` |
-| Forgetting argMax or -Merge | Incomplete aggregation results | Use `argMax` pattern for Replacing/Collapsing, `-Merge` for Aggregating |
-| No backfill after MV creation | Missing historical data | Manually INSERT historical aggregates |
-| MV on wrong table | Inserts to wrong source ignored | Ensure MV is on the table receiving INSERTs |
-| Too many MVs on one source | Slow inserts | Consider fewer MVs or async processing |
+| Pitfall                                 | Problem                               | Solution                                                                                                                   |
+| --------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Using `uniq()` with SummingMergeTree    | Sums don't equal uniques              | Use AggregatingMergeTree with `uniqState/uniqMerge`                                                                        |
+| Forgetting argMax or -Merge             | Incomplete aggregation results        | Use `argMax` pattern for Replacing/Collapsing, `-Merge` for Aggregating                                                    |
+| No backfill after MV creation           | Missing historical data               | Manually INSERT historical aggregates                                                                                      |
+| MV on wrong table                       | Inserts to wrong source ignored       | Ensure MV is on the table receiving INSERTs                                                                                |
+| Too many MVs on one source              | Slow inserts                          | Consider fewer MVs or async processing                                                                                     |
+| Assuming chain is cheaper than parallel | Wrong topology choice                 | Chain and parallel have nearly identical resource cost — choose topology based on query granularity needs, not performance |
+| Chained MV reads final table state      | Wrong aggregation logic, missing data | Downstream MVs see the pre-aggregated block, not merged state — use `-MergeState` when chaining AggregatingMergeTree       |
 
 ## Decision Tree
 
@@ -294,6 +297,10 @@ Need to aggregate data at query time?
 
 ## Complete Example: Multi-Level Aggregation
 
+Chain MVs when each level serves different query granularity (hourly → daily). The downstream MV sees the **pre-aggregated block** (output of the upstream MV's SELECT), not the merged table state — use `-MergeState` to handle partial aggregation states.
+
+**Cost note:** Chain (A→B→C) vs parallel (A→B, A→C) topologies have nearly identical resource consumption. The bottleneck is total data written to target tables, not the topology. Choose based on query needs, not performance assumptions.
+
 ```sql
 -- Level 1: Raw events (source)
 CREATE TABLE events (...) ENGINE = MergeTree() ORDER BY ...;
@@ -315,6 +322,10 @@ SELECT
 FROM events GROUP BY hour, tenant_id;
 
 -- Level 3: Daily aggregates (from hourly)
+-- daily_mv receives the pre-aggregated block inserted into hourly_stats
+-- (already grouped by hour/tenant with -State values), but NOT merged
+-- with existing hourly_stats data. sumMergeState/uniqMergeState handles
+-- this: merges partial -State values within the block, then re-wraps as -State.
 CREATE TABLE daily_stats (
     date Date,
     tenant_id UInt32,
@@ -326,7 +337,7 @@ CREATE MATERIALIZED VIEW daily_mv TO daily_stats AS
 SELECT
     toDate(hour) AS date,
     tenant_id,
-    sumMergeState(events) AS events,   -- Merge then re-State
+    sumMergeState(events) AS events,   -- Merge partial states from block, then re-State
     uniqMergeState(users) AS users
 FROM hourly_stats GROUP BY date, tenant_id;
 ```
@@ -367,12 +378,12 @@ HAVING rows > 1;
 
 **Solutions:**
 
-| Cause | Fix |
-|-------|-----|
-| Using `uniq()` with SummingMergeTree | Switch to AggregatingMergeTree with `uniqState`/`uniqMerge` |
-| Forgetting `-Merge` in query | Always use `sumMerge()`, `uniqMerge()` for AggregatingMergeTree |
+| Cause                                      | Fix                                                                     |
+| ------------------------------------------ | ----------------------------------------------------------------------- |
+| Using `uniq()` with SummingMergeTree       | Switch to AggregatingMergeTree with `uniqState`/`uniqMerge`             |
+| Forgetting `-Merge` in query               | Always use `sumMerge()`, `uniqMerge()` for AggregatingMergeTree         |
 | Forgetting `argMax` for ReplacingMergeTree | Use argMax pattern: `SELECT key, argMax(col, version) ... GROUP BY key` |
-| Duplicate inserts to source | Deduplicate source or use ReplacingMergeTree for target |
+| Duplicate inserts to source                | Deduplicate source or use ReplacingMergeTree for target                 |
 
 ```sql
 -- BAD: uniq in SummingMergeTree (sums don't work)
@@ -404,12 +415,12 @@ SELECT max(event_time), count() FROM source_table WHERE event_time > now() - INT
 
 **Solutions:**
 
-| Cause | Fix |
-|-------|-----|
-| MV detached | `ALTER TABLE source ATTACH MATERIALIZED VIEW mv_name` |
-| MV on wrong source table | Drop MV, recreate with correct source |
-| Historical data not backfilled | Manually INSERT aggregated historical data |
-| Inserts going to different table | Ensure app inserts to the MV's source table |
+| Cause                            | Fix                                                   |
+| -------------------------------- | ----------------------------------------------------- |
+| MV detached                      | `ALTER TABLE source ATTACH MATERIALIZED VIEW mv_name` |
+| MV on wrong source table         | Drop MV, recreate with correct source                 |
+| Historical data not backfilled   | Manually INSERT aggregated historical data            |
+| Inserts going to different table | Ensure app inserts to the MV's source table           |
 
 ```sql
 -- Backfill historical data
@@ -441,11 +452,11 @@ EXPLAIN SELECT ... FROM source_table ...;  -- Use MV's SELECT query
 
 **Solutions:**
 
-| Cause | Fix |
-|-------|-----|
-| Too many MVs on one source | Consolidate MVs or use async inserts |
+| Cause                                      | Fix                                        |
+| ------------------------------------------ | ------------------------------------------ |
+| Too many MVs on one source                 | Consolidate MVs or use async inserts       |
 | Complex MV query (JOINs, heavy transforms) | Simplify MV, move complexity to query time |
-| MV target table has wrong ORDER BY | Match target ORDER BY to MV's GROUP BY |
+| MV target table has wrong ORDER BY         | Match target ORDER BY to MV's GROUP BY     |
 
 ```sql
 -- Example: MV groups by (tenant_id, date)
@@ -472,11 +483,11 @@ LIMIT 10;
 
 **Solutions:**
 
-| Cause | Fix |
-|-------|-----|
-| ORDER BY doesn't match GROUP BY | Recreate target with ORDER BY matching MV's GROUP BY |
-| Background merges haven't run | Wait for automatic merge, or use argMax in query |
-| Wrong engine (MergeTree instead of Summing/Aggregating) | Recreate with correct engine |
+| Cause                                                   | Fix                                                  |
+| ------------------------------------------------------- | ---------------------------------------------------- |
+| ORDER BY doesn't match GROUP BY                         | Recreate target with ORDER BY matching MV's GROUP BY |
+| Background merges haven't run                           | Wait for automatic merge, or use argMax in query     |
+| Wrong engine (MergeTree instead of Summing/Aggregating) | Recreate with correct engine                         |
 
 ```sql
 -- ORDER BY must match GROUP BY columns for proper aggregation
